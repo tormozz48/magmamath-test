@@ -6,5 +6,5 @@
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
-  "roots": ["<rootDir>/user/", "<rootDir>/notification/"]
+  "roots": ["<rootDir>/user/src/", "<rootDir>/notification/src/"]
 }

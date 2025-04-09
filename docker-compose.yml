@@ -1,5 +1,7 @@
 version: '3.8'
 
+# Load environment variables from .env file
+# This is actually done automatically by docker-compose, but it's good to be explicit
 services:
   # MongoDB service
   mongodb:
@@ -7,11 +9,11 @@ services:
     container_name: mongodb
     restart: always
     ports:
-      - "27017:27017"
+      - "${MONGODB_PORT}:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: password
-      MONGO_INITDB_DATABASE: users_db
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE}
     volumes:
       - mongodb_data:/data/db
     networks:
@@ -23,11 +25,11 @@ services:
     container_name: rabbitmq
     restart: always
     ports:
-      - "5672:5672"   # AMQP protocol port
-      - "15672:15672" # Management UI port
+      - "${RABBITMQ_PORT}:5672"   # AMQP protocol port
+      - "${RABBITMQ_MANAGEMENT_PORT}:15672" # Management UI port
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
@@ -37,15 +39,16 @@ services:
   user-service:
     build:
       context: .
-      dockerfile: Dockerfile.user
+      dockerfile: user/Dockerfile
     container_name: user-service
     restart: always
     ports:
-      - "4000:4000"
+      - "${USER_SERVICE_PORT}:${USER_SERVICE_PORT}"
     environment:
       - NODE_ENV=development
-      - MONGODB_URI=mongodb://root:password@mongodb:27017/users_db?authSource=admin
-      - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672
+      - USER_SERVICE_PORT=${USER_SERVICE_PORT}
+      - MONGODB_URI=mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@mongodb:27017/${MONGODB_DATABASE}?authSource=admin
+      - RABBITMQ_URI=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
     depends_on:
       - mongodb
       - rabbitmq
@@ -56,14 +59,15 @@ services:
   notification-service:
     build:
       context: .
-      dockerfile: Dockerfile.notification
+      dockerfile: notification/Dockerfile
     container_name: notification-service
     restart: always
     ports:
-      - "4001:4001"
+      - "${NOTIFICATION_SERVICE_PORT}:${NOTIFICATION_SERVICE_PORT}"
     environment:
       - NODE_ENV=development
-      - RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672
+      - NOTIFICATION_SERVICE_PORT=${NOTIFICATION_SERVICE_PORT}
+      - RABBITMQ_URI=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672
     depends_on:
       - rabbitmq
     networks:
