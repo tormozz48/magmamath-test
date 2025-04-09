@@ -37,7 +37,7 @@ services:
   user-service:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.user
     container_name: user-service
     restart: always
     ports:
