@@ -16,7 +16,9 @@
     "noImplicitAny": false,
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false
+    "noFallthroughCasesInSwitch": false,
+    "noEmitOnError": true,
+    "useDefineForClassFields": false
   },
   "include": ["user/**/*.ts", "notification/**/*.ts"]
 }

@@ -8,17 +8,17 @@
     "lint": "eslint \"{user/src,notification/src,test}/**/*.ts\"",
     "lint:fix": "eslint \"{user/src,notification/src,test}/**/*.ts\" --fix",
     
-    "user:build": "nest build -p user/nest-cli.json",
+    "user:build": "tsc -p user/tsconfig.json",
     "user:start": "nest start -p user/nest-cli.json",
     "user:start:dev": "nest start -p user/nest-cli.json --watch",
     "user:start:debug": "nest start -p user/nest-cli.json --debug --watch",
-    "user:start:prod": "node dist/user/src/main",
+    "user:start:prod": "node user/dist/main",
     
-    "notification:build": "nest build -p notification/nest-cli.json",
+    "notification:build": "tsc -p notification/tsconfig.json",
     "notification:start": "nest start -p notification/nest-cli.json",
     "notification:start:dev": "nest start -p notification/nest-cli.json --watch",
     "notification:start:debug": "nest start -p notification/nest-cli.json --debug --watch",
-    "notification:start:prod": "node dist/notification/src/main",
+    "notification:start:prod": "node notification/dist/main",
     
     "build": "npm run user:build && npm run notification:build",
     "start:prod": "concurrently \"npm run user:start:prod\" \"npm run notification:start:prod\"",
@@ -35,8 +35,13 @@
   "dependencies": {
     "@nestjs/common": "^11.0.14",
     "@nestjs/core": "^11.0.14",
+    "@nestjs/mapped-types": "^2.1.0",
+    "@nestjs/mongoose": "^11.0.3",
     "@nestjs/platform-express": "^11.0.14",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.1",
     "dotenv": "^16.4.7",
+    "mongoose": "^8.13.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2"
   },
