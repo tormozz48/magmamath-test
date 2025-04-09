@@ -14,8 +14,7 @@ coverage
 .gitignore
 
 # Docker files
-Dockerfile
-Dockerfile.notification
+**/Dockerfile
 docker-compose.yml
 .dockerignore
 
