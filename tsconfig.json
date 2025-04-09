@@ -18,5 +18,5 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false
   },
-  "include": ["user/**/*.ts"]
+  "include": ["user/**/*.ts", "notification/**/*.ts"]
 }
