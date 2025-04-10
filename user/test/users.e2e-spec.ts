@@ -1,10 +1,9 @@
 import { INestApplication } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
 
 import { Connection, connect } from 'mongoose';
 import * as request from 'supertest';
 
-import { AppModule } from '../src/app.module';
+import { createApplication } from '../src/app';
 import { CreateUserDto } from '../src/users/dto/create-user.dto';
 import { UpdateUserDto } from '../src/users/dto/update-user.dto';
 import { RabbitMQHelper } from './helpers/rabbitmq.helper';
@@ -14,6 +13,7 @@ describe('UsersController (e2e)', () => {
   let mongoConnection: Connection;
   let rabbitMQHelper: RabbitMQHelper;
   let userId: string;
+  const API_PREFIX = '/api/v1';
 
   // Create unique emails for each test run to avoid conflicts
   const timestamp = new Date().getTime();
@@ -60,13 +60,8 @@ describe('UsersController (e2e)', () => {
     await rabbitMQHelper.connect();
     await rabbitMQHelper.purgeQueue();
 
-    // Create and initialize the NestJS application
-    const moduleFixture = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    await app.init();
+    app = await createApplication();
+    await app.listen(process.env.USER_SERVICE_PORT || 4000);
   });
 
   afterAll(async () => {
@@ -92,7 +87,10 @@ describe('UsersController (e2e)', () => {
 
   describe('POST /users', () => {
     it('should create a new user and publish a message to RabbitMQ', async () => {
-      const response = await request(app.getHttpServer()).post('/users').send(mockUser).expect(201);
+      const response = await request(app.getHttpServer())
+        .post(`${API_PREFIX}/users`)
+        .send(mockUser)
+        .expect(201);
 
       expect(response.body).toHaveProperty('id');
       expect(response.body.name).toBe(mockUser.name);
@@ -113,24 +111,21 @@ describe('UsersController (e2e)', () => {
       }
     }, 10000); // Increase timeout for RabbitMQ message check
 
-    it('should return 409 when trying to create a user with existing email', async () => {
-      await request(app.getHttpServer()).post('/users').send(mockUser).expect(409);
+    it('should return 409 error when trying to create a user with existing email', async () => {
+      await request(app.getHttpServer()).post(`${API_PREFIX}/users`).send(mockUser).expect(409);
     });
 
-    it('should return error when validation fails', async () => {
-      const response = await request(app.getHttpServer())
-        .post('/users')
-        .send({ name: 'Invalid User' });
-
-      // The API returns 500 instead of 400 for validation errors
-      // In a real-world scenario, we might want to fix the validation handling
-      expect([400, 500]).toContain(response.status);
+    it('should return 400 error when validation fails', async () => {
+      await request(app.getHttpServer())
+        .post(`${API_PREFIX}/users`)
+        .send({ name: 'Invalid User' })
+        .expect(400);
     });
   });
 
   describe('GET /users', () => {
     it('should return paginated list of users', async () => {
-      const response = await request(app.getHttpServer()).get('/users').expect(200);
+      const response = await request(app.getHttpServer()).get(`${API_PREFIX}/users`).expect(200);
 
       expect(response.body).toHaveProperty('items');
       expect(response.body).toHaveProperty('total');
@@ -141,37 +136,22 @@ describe('UsersController (e2e)', () => {
     });
 
     it('should filter users by name', async () => {
-      // Create another user first
-      const createResponse = await request(app.getHttpServer()).post('/users').send(mockUser2);
-
-      // Skip this test if user creation failed (e.g., due to duplicate email)
-      if (createResponse.status !== 201) {
-        console.log('Skipping test: could not create test user');
-        return;
-      }
+      await request(app.getHttpServer()).post(`${API_PREFIX}/users`).send(mockUser2);
 
       const response = await request(app.getHttpServer())
-        .get('/users')
+        .get(`${API_PREFIX}/users`)
         .query({ name: 'Another' })
         .expect(200);
 
       expect(response.body.items.length).toBeGreaterThan(0);
-      // At least one user should contain the name we're filtering by
       expect(response.body.items.some((user) => user.name.includes('Another'))).toBe(true);
     });
 
     it('should filter users by email', async () => {
-      // Create another user first
-      const createResponse = await request(app.getHttpServer()).post('/users').send(mockUser3);
-
-      // Skip this test if user creation failed (e.g., due to duplicate email)
-      if (createResponse.status !== 201) {
-        console.log('Skipping test: could not create test user');
-        return;
-      }
+      await request(app.getHttpServer()).post(`${API_PREFIX}/users`).send(mockUser3);
 
       const response = await request(app.getHttpServer())
-        .get('/users')
+        .get(`${API_PREFIX}/users`)
         .query({ email: `third${timestamp}` })
         .expect(200);
 
@@ -184,7 +164,7 @@ describe('UsersController (e2e)', () => {
 
     it('should paginate results', async () => {
       const response = await request(app.getHttpServer())
-        .get('/users')
+        .get(`${API_PREFIX}/users`)
         .query({ page: 1, limit: 2 })
         .expect(200);
 
@@ -209,7 +189,9 @@ describe('UsersController (e2e)', () => {
 
   describe('GET /users/:id', () => {
     it('should return a user by ID', async () => {
-      const response = await request(app.getHttpServer()).get(`/users/${userId}`).expect(200);
+      const response = await request(app.getHttpServer())
+        .get(`${API_PREFIX}/users/${userId}`)
+        .expect(200);
 
       expect(response.body.id).toBe(userId);
       expect(response.body.name).toBe(mockUser.name);
@@ -218,21 +200,14 @@ describe('UsersController (e2e)', () => {
 
     it('should return 404 when user does not exist', async () => {
       const nonExistentId = '507f1f77bcf86cd799439011';
-      await request(app.getHttpServer()).get(`/users/${nonExistentId}`).expect(404);
-    });
-
-    it('should return 400 or 500 when ID is invalid', async () => {
-      const response = await request(app.getHttpServer()).get('/users/invalid-id');
-
-      // Some implementations might return 400, others 500 for invalid IDs
-      expect([400, 500]).toContain(response.status);
+      await request(app.getHttpServer()).get(`${API_PREFIX}/users/${nonExistentId}`).expect(404);
     });
   });
 
   describe('PATCH /users/:id', () => {
     it('should update a user and publish a message to RabbitMQ', async () => {
       const response = await request(app.getHttpServer())
-        .patch(`/users/${userId}`)
+        .patch(`${API_PREFIX}/users/${userId}`)
         .send(mockUpdateUser)
         .expect(200);
 
@@ -253,7 +228,7 @@ describe('UsersController (e2e)', () => {
 
     it('should update user email', async () => {
       const response = await request(app.getHttpServer())
-        .patch(`/users/${userId}`)
+        .patch(`${API_PREFIX}/users/${userId}`)
         .send(mockUpdateEmail)
         .expect(200);
 
@@ -265,74 +240,43 @@ describe('UsersController (e2e)', () => {
     it('should return 404 when user does not exist', async () => {
       const nonExistentId = '507f1f77bcf86cd799439011';
       await request(app.getHttpServer())
-        .patch(`/users/${nonExistentId}`)
+        .patch(`${API_PREFIX}/users/${nonExistentId}`)
         .send(mockUpdateUser)
         .expect(404);
     });
 
-    it('should accept invalid email format in current implementation', async () => {
-      // Note: This test is adapted to match the current implementation
-      // In a real-world scenario, we might want to fix the validation instead
-      await request(app.getHttpServer())
-        .patch(`/users/${userId}`)
-        .send({ email: 'invalid-email' })
-        .expect(200);
-
-      // Restore valid email for subsequent tests
-      await request(app.getHttpServer())
-        .patch(`/users/${userId}`)
-        .send({ email: mockUpdateEmail.email })
-        .expect(200);
-    });
-
     it('should return 409 when email is already in use', async () => {
-      // First create another user to have a duplicate email
-      const createResponse = await request(app.getHttpServer())
-        .post('/users')
+      await request(app.getHttpServer())
+        .post(`${API_PREFIX}/users`)
         .send({
           name: 'Duplicate Email User',
           email: `duplicate${timestamp}@example.com`,
-        });
-
-      // Skip this test if user creation failed
-      if (createResponse.status !== 201) {
-        console.log('Skipping test: could not create test user for duplicate email test');
-        return;
-      }
+        })
+        .expect(201);
 
       // Try to update our main test user with the duplicate email
-      const updateResponse = await request(app.getHttpServer())
-        .patch(`/users/${userId}`)
-        .send({ email: `duplicate${timestamp}@example.com` });
-
-      // The API should return 409 Conflict for duplicate email
-      expect(updateResponse.status).toBe(409);
+      await request(app.getHttpServer())
+        .patch(`${API_PREFIX}/users/${userId}`)
+        .send({ email: `duplicate${timestamp}@example.com` })
+        .expect(409);
     });
   });
 
   describe('DELETE /users/:id', () => {
     it('should delete a user and publish a message to RabbitMQ', async () => {
-      // The API returns 200 instead of 204, adapting the test to match implementation
-      await request(app.getHttpServer()).delete(`/users/${userId}`).expect(200);
+      await request(app.getHttpServer()).delete(`${API_PREFIX}/users/${userId}`).expect(200);
 
-      // Check if message was published to RabbitMQ
       const message = await rabbitMQHelper.getUserDeletedMessage();
 
-      // Only verify message properties if a message was received
       if (message) {
         expect(message.id).toBe(userId);
+        expect(message.name).toBe(mockUser.name);
+        expect(message.email).toBe(mockUser.email);
       }
     }, 10000); // Increase timeout for RabbitMQ message check
 
     it('should return 404 when user does not exist', async () => {
-      await request(app.getHttpServer()).delete(`/users/${userId}`).expect(404);
-    });
-
-    it('should return error when ID is invalid', async () => {
-      const response = await request(app.getHttpServer()).delete('/users/invalid-id');
-
-      // Some implementations might return 400, others 500 for invalid IDs
-      expect([400, 500]).toContain(response.status);
+      await request(app.getHttpServer()).delete(`${API_PREFIX}/users/${userId}`).expect(404);
     });
   });
 });

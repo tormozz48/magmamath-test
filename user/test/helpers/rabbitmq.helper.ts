@@ -9,17 +9,12 @@ import {
   RABBITMQ_USER_UPDATED_PATTERN,
 } from '../../src/constants/rabbitmq.constants';
 
-/**
- * Helper class for interacting with RabbitMQ in e2e tests
- */
 export class RabbitMQHelper {
   private connection: any;
   private channel: any;
   private readonly logger = new Logger(RabbitMQHelper.name);
+  private readonly defaultTimeout = 5000;
 
-  /**
-   * Connect to RabbitMQ
-   */
   async connect(): Promise<void> {
     try {
       const uri = process.env.RABBITMQ_URI;
@@ -30,7 +25,6 @@ export class RabbitMQHelper {
       this.connection = await amqplib.connect(uri);
       this.channel = await this.connection.createChannel();
 
-      // Ensure the queue exists
       await this.channel.assertQueue(RABBITMQ_QUEUE, { durable: true });
 
       this.logger.log('Connected to RabbitMQ for testing');
@@ -40,9 +34,6 @@ export class RabbitMQHelper {
     }
   }
 
-  /**
-   * Close the RabbitMQ connection
-   */
   async close(): Promise<void> {
     try {
       if (this.channel) {
@@ -57,9 +48,6 @@ export class RabbitMQHelper {
     }
   }
 
-  /**
-   * Purge all messages from the queue
-   */
   async purgeQueue(): Promise<void> {
     try {
       await this.channel.purgeQueue(RABBITMQ_QUEUE);
@@ -70,37 +58,22 @@ export class RabbitMQHelper {
     }
   }
 
-  /**
-   * Get a user created message
-   * @param timeout Timeout in milliseconds
-   */
-  async getUserCreatedMessage(timeout = 5000): Promise<any> {
+  async getUserCreatedMessage(timeout = this.defaultTimeout): Promise<any> {
     return this.getMessageWithPattern(RABBITMQ_USER_CREATED_PATTERN, timeout);
   }
 
-  /**
-   * Get a user updated message
-   * @param timeout Timeout in milliseconds
-   */
-  async getUserUpdatedMessage(timeout = 5000): Promise<any> {
+  async getUserUpdatedMessage(timeout = this.defaultTimeout): Promise<any> {
     return this.getMessageWithPattern(RABBITMQ_USER_UPDATED_PATTERN, timeout);
   }
 
-  /**
-   * Get a user deleted message
-   * @param timeout Timeout in milliseconds
-   */
-  async getUserDeletedMessage(timeout = 5000): Promise<any> {
+  async getUserDeletedMessage(timeout = this.defaultTimeout): Promise<any> {
     return this.getMessageWithPattern(RABBITMQ_USER_DELETED_PATTERN, timeout);
   }
 
-  /**
-   * Get a message from the queue that matches the specified pattern
-   * @param pattern The pattern to look for in the message payload
-   * @param timeout Timeout in milliseconds
-   * @returns The message content or null if no message is received within the timeout
-   */
-  private async getMessageWithPattern(pattern: string, timeout = 5000): Promise<any> {
+  private async getMessageWithPattern(
+    pattern: string,
+    timeout = this.defaultTimeout,
+  ): Promise<any> {
     return new Promise((resolve) => {
       const timer = setTimeout(() => {
         if (consumerTag) {
@@ -119,8 +92,6 @@ export class RabbitMQHelper {
               try {
                 const content = JSON.parse(msg.content.toString());
 
-                // Check if this message matches our pattern
-                // In NestJS, the pattern is included in the message headers
                 if (msg.properties.headers && msg.properties.headers.pattern === pattern) {
                   clearTimeout(timer);
                   this.channel.cancel(consumerTag);
@@ -128,7 +99,6 @@ export class RabbitMQHelper {
                   this.logger.log(`Received message with pattern: ${pattern}`);
                   resolve(content);
                 } else {
-                  // Not the pattern we're looking for, put it back in the queue
                   this.channel.nack(msg, false, true);
                 }
               } catch (error) {
