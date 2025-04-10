@@ -1,9 +1,10 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { CreateUserDto } from './dto/create-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserResponseDto } from './dto/user-response.dto';
 import { UsersService } from './users.service';
 
 @ApiTags('users')
@@ -13,55 +14,69 @@ export class UsersController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new user' })
-  @ApiResponse({ status: 201, description: 'User successfully created' })
-  @ApiResponse({ status: 400, description: 'Bad request - Invalid input data' })
-  @ApiResponse({ status: 409, description: 'Conflict - Email already exists' })
-  create(@Body() createUserDto: CreateUserDto) {
+  @ApiResponse({
+    status: 201,
+    description: 'The user has been successfully created.',
+    type: UserResponseDto,
+  })
+  @ApiResponse({ status: 409, description: 'User with this email already exists.' })
+  create(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
     return this.usersService.create(createUserDto);
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all users with filtering and pagination' })
-  @ApiResponse({ status: 200, description: 'List of users retrieved successfully' })
-  @ApiQuery({ name: 'name', required: false, description: 'Filter users by name' })
-  @ApiQuery({ name: 'email', required: false, description: 'Filter users by email' })
-  @ApiQuery({ name: 'page', required: false, description: 'Page number', type: Number })
+  @ApiOperation({ summary: 'Get all users with optional filtering' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns a list of users',
+    type: [UserResponseDto],
+  })
+  @ApiQuery({ name: 'name', required: false, description: 'Filter by name (case-insensitive)' })
+  @ApiQuery({ name: 'email', required: false, description: 'Filter by email (case-insensitive)' })
+  @ApiQuery({ name: 'page', required: false, description: 'Page number (default: 1)' })
   @ApiQuery({
     name: 'limit',
     required: false,
-    description: 'Number of items per page',
-    type: Number,
+    description: 'Number of items per page (default: 10)',
   })
-  findAll(@Query() queryUserDto: QueryUserDto) {
+  findAll(@Query() queryUserDto: QueryUserDto): Promise<UserResponseDto[]> {
     return this.usersService.findAll(queryUserDto);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a user by ID' })
-  @ApiParam({ name: 'id', description: 'User ID' })
-  @ApiResponse({ status: 200, description: 'User found and returned' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns the user with the specified ID',
+    type: UserResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'User not found' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string): Promise<UserResponseDto> {
     return this.usersService.findOne(id);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update a user' })
-  @ApiParam({ name: 'id', description: 'User ID' })
-  @ApiResponse({ status: 200, description: 'User updated successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request - Invalid input data' })
+  @ApiResponse({
+    status: 200,
+    description: 'The user has been successfully updated.',
+    type: UserResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @ApiResponse({ status: 409, description: 'Conflict - Email already in use' })
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  @ApiResponse({ status: 409, description: 'Email already in use' })
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto): Promise<UserResponseDto> {
     return this.usersService.update(id, updateUserDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a user' })
-  @ApiParam({ name: 'id', description: 'User ID' })
-  @ApiResponse({ status: 200, description: 'User deleted successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'The user has been successfully deleted.',
+    type: UserResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'User not found' })
-  remove(@Param('id') id: string) {
+  remove(@Param('id') id: string): Promise<UserResponseDto> {
     return this.usersService.remove(id);
   }
 }

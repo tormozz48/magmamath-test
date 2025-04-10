@@ -2,6 +2,7 @@ version: '3.8'
 
 # Load environment variables from .env file
 # This is actually done automatically by docker-compose, but it's good to be explicit
+
 services:
   # MongoDB service
   mongodb:
