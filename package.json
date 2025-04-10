@@ -7,22 +7,16 @@
     "format": "prettier --write \"user/src/**/*.ts\" \"notification/src/**/*.ts\"",
     "lint": "eslint \"{user/src,notification/src,test}/**/*.ts\"",
     "lint:fix": "eslint \"{user/src,notification/src,test}/**/*.ts\" --fix",
-    
     "user:build": "tsc -p user/tsconfig.json",
-    "user:start": "nest start -p user/nest-cli.json",
-    "user:start:dev": "nest start -p user/nest-cli.json --watch",
-    "user:start:debug": "nest start -p user/nest-cli.json --debug --watch",
-    "user:start:prod": "node user/dist/main",
-    
+    "user:start": "ts-node -r tsconfig-paths/register user/src/main.ts",
+    "user:start:dev": "nodemon --watch user/src -e ts --exec \"npm run user:start\"",
+    "user:start:debug": "node --inspect-brk -r ts-node/register -r tsconfig-paths/register user/src/main.ts",
     "notification:build": "tsc -p notification/tsconfig.json",
-    "notification:start": "nest start -p notification/nest-cli.json",
-    "notification:start:dev": "nest start -p notification/nest-cli.json --watch",
-    "notification:start:debug": "nest start -p notification/nest-cli.json --debug --watch",
-    "notification:start:prod": "node notification/dist/main",
-    
+    "notification:start": "ts-node -r tsconfig-paths/register notification/src/main.ts",
+    "notification:start:dev": "nodemon --watch notification/src -e ts --exec \"npm run notification:start\"",
+    "notification:start:debug": "node --inspect-brk -r ts-node/register -r tsconfig-paths/register notification/src/main.ts",
     "build": "npm run user:build && npm run notification:build",
-    "start:prod": "concurrently \"npm run user:start:prod\" \"npm run notification:start:prod\"",
-    
+    "start:prod": "concurrently \"npm run user:start\" \"npm run notification:start\"",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -59,9 +53,12 @@
     "eslint-config-prettier": "^10.1.1",
     "eslint-plugin-prettier": "^5.2.6",
     "jest": "^29.7.0",
+    "nodemon": "^2.0.22",
     "prettier": "^3.5.3",
     "supertest": "^7.1.0",
     "ts-jest": "^29.3.1",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.8.3"
   }
 }
