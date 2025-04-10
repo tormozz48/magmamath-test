@@ -1,7 +1,9 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+
+import { AppModule } from './app.module';
 
 // Load environment variables from .env file
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
