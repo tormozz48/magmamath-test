@@ -23,7 +23,8 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "user:test:e2e": "jest --config ./user/test/jest-e2e.json"
+    "user:test:e2e": "jest --config ./user/test/jest-e2e.json",
+    "notification:test:e2e": "jest --config ./notification/test/jest-e2e.json"
   },
   "keywords": [],
   "author": "",

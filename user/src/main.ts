@@ -6,9 +6,13 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 
 import { AppModule } from './app.module';
+import { setupConnectionUris } from './config/environment';
 
 // Load environment variables from .env file
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+
+// Setup MongoDB and RabbitMQ connection URIs
+setupConnectionUris();
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
