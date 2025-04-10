@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 import { Type } from 'class-transformer';
-import { IsEmail, IsInt, IsOptional, IsPositive, IsString, Min } from 'class-validator';
+import { IsInt, IsOptional, IsPositive, IsString, Min } from 'class-validator';
 
 export class QueryUserDto {
   @ApiProperty({
@@ -19,7 +19,7 @@ export class QueryUserDto {
     required: false,
   })
   @IsOptional()
-  @IsEmail()
+  @IsString()
   email?: string;
 
   @ApiProperty({
