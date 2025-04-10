@@ -1,7 +1,17 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { CreateUserDto } from './dto/create-user.dto';
+import { PaginatedResponseDto } from './dto/paginated-response.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserResponseDto } from './dto/user-response.dto';
@@ -15,8 +25,7 @@ export class UsersController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new user' })
-  @ApiResponse({
-    status: 201,
+  @ApiCreatedResponse({
     description: 'The user has been successfully created',
     type: UserResponseDto,
   })
@@ -27,11 +36,10 @@ export class UsersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all users with optional filtering' })
-  @ApiResponse({
-    status: 200,
-    description: 'Return all users that match the filter criteria',
-    type: [UserResponseDto],
+  @ApiOperation({ summary: 'Get all users with optional filtering and pagination' })
+  @ApiOkResponse({
+    description: 'Return paginated users that match the filter criteria',
+    type: PaginatedResponseDto,
   })
   @ApiQuery({ name: 'name', required: false, description: 'Filter by name (case-insensitive)' })
   @ApiQuery({ name: 'email', required: false, description: 'Filter by email (case-insensitive)' })
@@ -41,19 +49,26 @@ export class UsersController {
     required: false,
     description: 'Number of items per page (default: 10)',
   })
-  async findAll(@Query() queryUserDto: QueryUserDto): Promise<UserResponseDto[]> {
-    const users = await this.usersService.findAll(queryUserDto);
-    return this.toUserDtoArray(users);
+  async findAll(@Query() queryUserDto: QueryUserDto): Promise<PaginatedResponseDto> {
+    const paginatedResult = await this.usersService.findAll(queryUserDto);
+
+    return {
+      items: this.toUserDtoArray(paginatedResult.items),
+      total: paginatedResult.total,
+      page: paginatedResult.page,
+      limit: paginatedResult.limit,
+      pages: paginatedResult.pages,
+    };
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a user by ID' })
-  @ApiResponse({
-    status: 200,
+  @ApiParam({ name: 'id', description: 'User ID', example: '5f8d0d55b54764421b7156c5' })
+  @ApiOkResponse({
     description: 'Return the user with the specified ID',
     type: UserResponseDto,
   })
-  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiNotFoundResponse({ description: 'User not found' })
   async findOne(@Param('id') id: string): Promise<UserResponseDto> {
     const user = await this.usersService.findOne(id);
     return this.toUserDto(user);
@@ -61,12 +76,12 @@ export class UsersController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update a user by ID' })
-  @ApiResponse({
-    status: 200,
+  @ApiParam({ name: 'id', description: 'User ID', example: '5f8d0d55b54764421b7156c5' })
+  @ApiOkResponse({
     description: 'The user has been successfully updated',
     type: UserResponseDto,
   })
-  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiNotFoundResponse({ description: 'User not found' })
   @ApiResponse({ status: 409, description: 'Email already in use' })
   async update(
     @Param('id') id: string,
@@ -78,12 +93,12 @@ export class UsersController {
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a user by ID' })
-  @ApiResponse({
-    status: 200,
+  @ApiParam({ name: 'id', description: 'User ID', example: '5f8d0d55b54764421b7156c5' })
+  @ApiOkResponse({
     description: 'The user has been successfully deleted',
     type: UserResponseDto,
   })
-  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiNotFoundResponse({ description: 'User not found' })
   async remove(@Param('id') id: string): Promise<UserResponseDto> {
     const user = await this.usersService.remove(id);
     return this.toUserDto(user);

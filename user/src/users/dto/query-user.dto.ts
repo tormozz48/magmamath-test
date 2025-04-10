@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 import { Type } from 'class-transformer';
-import { IsNumber, IsOptional, IsPositive, IsString, Min } from 'class-validator';
+import { IsEmail, IsInt, IsOptional, IsPositive, IsString, Min } from 'class-validator';
 
 export class QueryUserDto {
   @ApiProperty({
@@ -15,11 +15,11 @@ export class QueryUserDto {
 
   @ApiProperty({
     description: 'Filter users by email (case-insensitive)',
-    example: 'gmail',
+    example: 'john',
     required: false,
   })
   @IsOptional()
-  @IsString()
+  @IsEmail()
   email?: string;
 
   @ApiProperty({
@@ -30,10 +30,9 @@ export class QueryUserDto {
   })
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
-  @IsPositive()
+  @IsInt()
   @Min(1)
-  page?: number = 1;
+  page?: number;
 
   @ApiProperty({
     description: 'Number of items per page',
@@ -43,8 +42,7 @@ export class QueryUserDto {
   })
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
+  @IsInt()
   @IsPositive()
-  @Min(1)
-  limit?: number = 10;
+  limit?: number;
 }

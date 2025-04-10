@@ -33,7 +33,9 @@ export class UsersService {
     }
   }
 
-  async findAll(queryUserDto: QueryUserDto): Promise<UserDocument[]> {
+  async findAll(
+    queryUserDto: QueryUserDto,
+  ): Promise<{ items: UserDocument[]; total: number; page: number; limit: number; pages: number }> {
     const { name, email, page = 1, limit = 10 } = queryUserDto;
     const skip = (page - 1) * limit;
 
@@ -45,7 +47,21 @@ export class UsersService {
       filter.email = { $regex: email, $options: 'i' };
     }
 
-    return this.userModel.find(filter).skip(skip).limit(limit).exec();
+    // Execute both queries in parallel for better performance
+    const [items, total] = await Promise.all([
+      this.userModel.find(filter).skip(skip).limit(limit).exec(),
+      this.userModel.countDocuments(filter).exec(),
+    ]);
+
+    const pages = Math.ceil(total / limit);
+
+    return {
+      items,
+      total,
+      page: +page,
+      limit: +limit,
+      pages,
+    };
   }
 
   async findOne(id: string): Promise<UserDocument> {
