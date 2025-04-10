@@ -16,23 +16,6 @@ export class UsersService {
     private readonly queueService: QueueService,
   ) {}
 
-  async create(createUserDto: CreateUserDto): Promise<UserDocument> {
-    try {
-      const createdUser = new this.userModel(createUserDto);
-      const user = await createdUser.save();
-
-      // Publish user created event to RabbitMQ
-      await this.queueService.publishUserCreated(user);
-
-      return user;
-    } catch (error) {
-      if (error.code === 11000) {
-        throw new ConflictException('User with this email already exists');
-      }
-      throw error;
-    }
-  }
-
   async findAll(
     queryUserDto: QueryUserDto,
   ): Promise<{ items: UserDocument[]; total: number; page: number; limit: number; pages: number }> {
@@ -58,8 +41,8 @@ export class UsersService {
     return {
       items,
       total,
-      page: +page,
-      limit: +limit,
+      page,
+      limit,
       pages,
     };
   }
@@ -72,8 +55,20 @@ export class UsersService {
     return user;
   }
 
+  async create(createUserDto: CreateUserDto): Promise<UserDocument> {
+    return this.handleDuplicationMongoErrors(async () => {
+      const createdUser = new this.userModel(createUserDto);
+      const user = await createdUser.save();
+
+      // Publish user created event to RabbitMQ
+      await this.queueService.publishUserCreated(user);
+
+      return user;
+    }, 'User with this email already exists');
+  }
+
   async update(id: string, updateUserDto: UpdateUserDto): Promise<UserDocument> {
-    try {
+    return this.handleDuplicationMongoErrors(async () => {
       const updatedUser = await this.userModel
         .findByIdAndUpdate(id, updateUserDto, { new: true })
         .exec();
@@ -86,12 +81,7 @@ export class UsersService {
       await this.queueService.publishUserUpdated(updatedUser);
 
       return updatedUser;
-    } catch (error) {
-      if (error.code === 11000) {
-        throw new ConflictException('Email already in use');
-      }
-      throw error;
-    }
+    }, 'Email already in use');
   }
 
   async remove(id: string): Promise<UserDocument> {
@@ -105,5 +95,25 @@ export class UsersService {
     await this.queueService.publishUserDeleted(deletedUser);
 
     return deletedUser;
+  }
+
+  /**
+   * Handle common MongoDB errors, particularly duplicate key errors (code 11000)
+   * @param operation Async operation to execute
+   * @param duplicateKeyMessage Custom message for duplicate key errors
+   * @returns Result of the operation
+   */
+  private async handleDuplicationMongoErrors<T>(
+    operation: () => Promise<T>,
+    duplicateKeyMessage: string,
+  ): Promise<T> {
+    try {
+      return await operation();
+    } catch (error) {
+      if (error.code === 11000) {
+        throw new ConflictException(duplicateKeyMessage);
+      }
+      throw error;
+    }
   }
 }
