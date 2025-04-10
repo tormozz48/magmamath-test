@@ -7,14 +7,25 @@ import {
   RABBITMQ_USER_UPDATED_PATTERN,
   UserEventType,
 } from '../constants/rabbitmq.constants';
-import { UserResponseDto } from '../users/dto/user-response.dto';
+import { UserDocument } from '../users/schemas/user.schema';
+import { UserEventDto } from './dto/user-event.dto';
 
+/**
+ * Service responsible for publishing events to RabbitMQ
+ */
 @Injectable()
 export class QueueService {
   private readonly logger = new Logger(QueueService.name);
 
+  /**
+   * Creates a new instance of QueueService
+   * @param client RabbitMQ client
+   */
   constructor(@Inject('RABBITMQ_CLIENT') private readonly client: ClientProxy) {}
 
+  /**
+   * Connects to RabbitMQ on application bootstrap
+   */
   async onApplicationBootstrap() {
     try {
       await this.client.connect();
@@ -24,16 +35,31 @@ export class QueueService {
     }
   }
 
-  async publishUserCreated(user: UserResponseDto) {
-    return this.publishEvent(RABBITMQ_USER_CREATED_PATTERN, user, UserEventType.CREATED);
+  /**
+   * Publish a user created event
+   * @param user User entity to publish
+   */
+  async publishUserCreated(user: UserDocument) {
+    const userDto = UserEventDto.fromEntity(user);
+    return this.publishEvent(RABBITMQ_USER_CREATED_PATTERN, userDto, UserEventType.CREATED);
   }
 
-  async publishUserUpdated(user: UserResponseDto) {
-    return this.publishEvent(RABBITMQ_USER_UPDATED_PATTERN, user, UserEventType.UPDATED);
+  /**
+   * Publish a user updated event
+   * @param user User entity to publish
+   */
+  async publishUserUpdated(user: UserDocument) {
+    const userDto = UserEventDto.fromEntity(user);
+    return this.publishEvent(RABBITMQ_USER_UPDATED_PATTERN, userDto, UserEventType.UPDATED);
   }
 
-  async publishUserDeleted(user: UserResponseDto) {
-    return this.publishEvent(RABBITMQ_USER_DELETED_PATTERN, user, UserEventType.DELETED);
+  /**
+   * Publish a user deleted event
+   * @param user User entity to publish
+   */
+  async publishUserDeleted(user: UserDocument) {
+    const userDto = UserEventDto.fromEntity(user);
+    return this.publishEvent(RABBITMQ_USER_DELETED_PATTERN, userDto, UserEventType.DELETED);
   }
 
   /**

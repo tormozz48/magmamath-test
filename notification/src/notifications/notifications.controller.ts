@@ -6,7 +6,7 @@ import {
   RABBITMQ_USER_DELETED_PATTERN,
   RABBITMQ_USER_UPDATED_PATTERN,
 } from '../constants/rabbitmq.constants';
-import { UserNotificationDto } from './dto/user-notification.dto';
+import { UserEventDto } from './dto/user-event.dto';
 import { NotificationsService } from './notifications.service';
 
 @Controller()
@@ -14,17 +14,17 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @EventPattern(RABBITMQ_USER_CREATED_PATTERN)
-  handleUserCreated(data: UserNotificationDto) {
+  handleUserCreated(data: UserEventDto) {
     this.notificationsService.handleUserCreated(data);
   }
 
   @EventPattern(RABBITMQ_USER_UPDATED_PATTERN)
-  handleUserUpdated(data: UserNotificationDto) {
+  handleUserUpdated(data: UserEventDto) {
     this.notificationsService.handleUserUpdated(data);
   }
 
   @EventPattern(RABBITMQ_USER_DELETED_PATTERN)
-  handleUserDeleted(data: UserNotificationDto) {
+  handleUserDeleted(data: UserEventDto) {
     this.notificationsService.handleUserDeleted(data);
   }
 }
