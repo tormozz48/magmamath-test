@@ -22,6 +22,8 @@ if (!process.env.RABBITMQ_QUEUE) {
   process.env.RABBITMQ_QUEUE = 'notifications_queue';
 }
 
+jest.setTimeout(10000);
+
 // Log the environment configuration for debugging
 console.log(`Test environment initialized with:
 - MongoDB URI: ${process.env.MONGODB_URI}

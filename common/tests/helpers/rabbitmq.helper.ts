@@ -87,46 +87,32 @@ export class RabbitMQHelper {
       this.channel
         .consume(
           this.queue,
-          (msg: any) => {
+          (msg: amqplib.ConsumeMessage | null) => {
             if (msg) {
-              this.handleMessage({ msg, pattern, resolve, timer, consumerTag });
+              try {
+                const content = JSON.parse(msg.content.toString());
+
+                if (msg.properties?.headers?.pattern === pattern || content.pattern === pattern) {
+                  clearTimeout(timer);
+                  if (consumerTag) {
+                    this.channel.cancel(consumerTag);
+                  }
+                  this.channel.ack(msg);
+                  resolve(content.data);
+                } else {
+                  this.channel.nack(msg, false, true);
+                }
+              } catch (error) {
+                this.channel.nack(msg);
+                this.logger.error('Error processing message', error);
+              }
             }
           },
           { noAck: false },
         )
-        .then(({ consumerTag: tag }) => {
-          consumerTag = tag;
+        .then((result: amqplib.Replies.Consume) => {
+          consumerTag = result.consumerTag;
         });
     });
-  }
-
-  private handleMessage({
-    msg,
-    pattern,
-    resolve,
-    timer,
-    consumerTag,
-  }: {
-    msg: any;
-    pattern: string;
-    resolve: (value: unknown) => void;
-    timer: NodeJS.Timeout;
-    consumerTag: string;
-  }): void {
-    try {
-      const content = JSON.parse(msg.content.toString());
-
-      if (content.pattern === pattern) {
-        clearTimeout(timer);
-        this.channel.cancel(consumerTag);
-        this.channel.ack(msg);
-        resolve(content.data);
-      } else {
-        this.channel.nack(msg, false, true);
-      }
-    } catch (error) {
-      this.channel.nack(msg);
-      this.logger.error('Error processing message', error);
-    }
   }
 }

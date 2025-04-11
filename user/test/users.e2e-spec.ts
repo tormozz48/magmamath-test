@@ -28,7 +28,7 @@ describe('UsersController (e2e)', () => {
         expect(message.name).toBe(testUser.name);
         expect(message.email).toBe(testUser.email);
       }
-    }, 10000); // Increase timeout for RabbitMQ message check
+    });
 
     it('should return 409 error when trying to create a user with existing email', async () => {
       const testUser = createUserDto({
@@ -172,7 +172,7 @@ describe('UsersController (e2e)', () => {
         expect(message.id).toBe(userId);
         expect(message.name).toBe(updateData.name);
       }
-    }, 10000); // Increase timeout for RabbitMQ message check
+    });
 
     it('should update user email', async () => {
       const testUser = createUserDto({
@@ -246,7 +246,7 @@ describe('UsersController (e2e)', () => {
       if (message) {
         expect(message.id).toBe(userId);
       }
-    }, 10000); // Increase timeout for RabbitMQ message check
+    });
 
     it('should return 404 when user does not exist', async () => {
       const nonExistentId = faker.database.mongodbObjectId();
