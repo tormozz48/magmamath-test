@@ -6,8 +6,8 @@ export class RabbitMQHelper {
   private readonly timeout: number;
   private readonly logger: Logger;
 
-  private connection: any;
-  private channel: any;
+  private connection: amqplib.ChannelModel;
+  private channel: amqplib.Channel;
   private queue: string;
 
   constructor({ queue, timeout }: { queue: string; timeout?: number }) {
@@ -50,6 +50,25 @@ export class RabbitMQHelper {
       await this.channel.purgeQueue(this.queue);
     } catch (error) {
       this.logger.error(`Error purging queue: ${this.queue}`, error);
+      throw error;
+    }
+  }
+
+  async publishEvent(pattern: string, data: any): Promise<void> {
+    try {
+      const message = Buffer.from(
+        JSON.stringify({
+          pattern,
+          data,
+        }),
+      );
+
+      await this.channel.publish('', this.queue, message, {
+        persistent: true,
+        contentType: 'application/json',
+      });
+    } catch (error) {
+      this.logger.error(`Error publishing event to queue: ${this.queue}`, error);
       throw error;
     }
   }
@@ -97,11 +116,11 @@ export class RabbitMQHelper {
     try {
       const content = JSON.parse(msg.content.toString());
 
-      if (msg.properties.headers && msg.properties.headers.pattern === pattern) {
+      if (content.pattern === pattern) {
         clearTimeout(timer);
         this.channel.cancel(consumerTag);
         this.channel.ack(msg);
-        resolve(content);
+        resolve(content.data);
       } else {
         this.channel.nack(msg, false, true);
       }

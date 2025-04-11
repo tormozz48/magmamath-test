@@ -11,6 +11,7 @@ export class NotificationsService {
    * @param data User event data
    */
   handleUserCreated(data: UserEventDto) {
+    this.handleEvent(data);
     this.logger.log(`User created notification received: ${JSON.stringify(data)}`);
     this.logger.log(`Sending welcome email to ${data.email}`);
   }
@@ -20,6 +21,7 @@ export class NotificationsService {
    * @param data User event data
    */
   handleUserUpdated(data: UserEventDto) {
+    this.handleEvent(data);
     this.logger.log(`User updated notification received: ${JSON.stringify(data)}`);
     this.logger.log(`Sending profile update confirmation to ${data.email}`);
   }
@@ -29,7 +31,13 @@ export class NotificationsService {
    * @param data User event data
    */
   handleUserDeleted(data: UserEventDto) {
+    this.handleEvent(data);
     this.logger.log(`User deleted notification received: ${JSON.stringify(data)}`);
     this.logger.log(`Sending account deletion confirmation to ${data.email}`);
+  }
+
+  handleEvent(data: UserEventDto) {
+    this.logger.log(`User event received: ${JSON.stringify(data)}`);
+    // TODO: Implement notification logic
   }
 }

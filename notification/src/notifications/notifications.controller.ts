@@ -2,10 +2,10 @@ import { Controller } from '@nestjs/common';
 import { EventPattern } from '@nestjs/microservices';
 
 import {
-  RABBITMQ_USER_CREATED_PATTERN,
-  RABBITMQ_USER_DELETED_PATTERN,
-  RABBITMQ_USER_UPDATED_PATTERN,
-} from '../constants/rabbitmq.constants';
+  QUEUE_PATTERN_USER_CREATED,
+  QUEUE_PATTERN_USER_DELETED,
+  QUEUE_PATTERN_USER_UPDATED,
+} from '../constants';
 import { UserEventDto } from './dto/user-event.dto';
 import { NotificationsService } from './notifications.service';
 
@@ -13,17 +13,17 @@ import { NotificationsService } from './notifications.service';
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
-  @EventPattern(RABBITMQ_USER_CREATED_PATTERN)
+  @EventPattern(QUEUE_PATTERN_USER_CREATED)
   handleUserCreated(data: UserEventDto) {
     this.notificationsService.handleUserCreated(data);
   }
 
-  @EventPattern(RABBITMQ_USER_UPDATED_PATTERN)
+  @EventPattern(QUEUE_PATTERN_USER_UPDATED)
   handleUserUpdated(data: UserEventDto) {
     this.notificationsService.handleUserUpdated(data);
   }
 
-  @EventPattern(RABBITMQ_USER_DELETED_PATTERN)
+  @EventPattern(QUEUE_PATTERN_USER_DELETED)
   handleUserDeleted(data: UserEventDto) {
     this.notificationsService.handleUserDeleted(data);
   }
