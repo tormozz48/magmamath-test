@@ -1,7 +1,7 @@
 import {
-  QUEUE_PATTERN_USER_CREATED,
-  QUEUE_PATTERN_USER_DELETED,
-  QUEUE_PATTERN_USER_UPDATED,
+  QUEUE_PATTERN_USERS_CREATED,
+  QUEUE_PATTERN_USERS_DELETED,
+  QUEUE_PATTERN_USERS_UPDATED,
 } from '../src/constants';
 import { NotificationsService } from '../src/notifications/notifications.service';
 import { app, rabbitMQHelper } from './setup';
@@ -23,7 +23,7 @@ describe('NotificationsController (e2e)', () => {
     const handleEventSpy = jest.spyOn(notificationsService, 'handleEvent');
     const handleUserCreatedSpy = jest.spyOn(notificationsService, 'handleUserCreated');
 
-    await rabbitMQHelper.publishEvent(QUEUE_PATTERN_USER_CREATED, testUser);
+    await rabbitMQHelper.publishEvent(QUEUE_PATTERN_USERS_CREATED, testUser);
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     expect(handleUserCreatedSpy).toHaveBeenCalledWith(testUser);
@@ -35,7 +35,7 @@ describe('NotificationsController (e2e)', () => {
     const handleEventSpy = jest.spyOn(notificationsService, 'handleEvent');
     const handleUserUpdatedSpy = jest.spyOn(notificationsService, 'handleUserUpdated');
 
-    await rabbitMQHelper.publishEvent(QUEUE_PATTERN_USER_UPDATED, testUser);
+    await rabbitMQHelper.publishEvent(QUEUE_PATTERN_USERS_UPDATED, testUser);
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     expect(handleUserUpdatedSpy).toHaveBeenCalledWith(testUser);
@@ -47,7 +47,7 @@ describe('NotificationsController (e2e)', () => {
     const handleEventSpy = jest.spyOn(notificationsService, 'handleEvent');
     const handleUserDeletedSpy = jest.spyOn(notificationsService, 'handleUserDeleted');
 
-    await rabbitMQHelper.publishEvent(QUEUE_PATTERN_USER_DELETED, testUser);
+    await rabbitMQHelper.publishEvent(QUEUE_PATTERN_USERS_DELETED, testUser);
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     expect(handleUserDeletedSpy).toHaveBeenCalledWith(testUser);

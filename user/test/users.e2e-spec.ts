@@ -1,11 +1,6 @@
 import { faker } from '@faker-js/faker/.';
 import * as request from 'supertest';
 
-import {
-  QUEUE_PATTERN_USER_CREATED,
-  QUEUE_PATTERN_USER_DELETED,
-  QUEUE_PATTERN_USER_UPDATED,
-} from '../src/constants';
 import { createUniqueEmail, createUserDto, updateUserDto } from './factories/user.factory';
 import { API_PREFIX, app, rabbitMQHelper } from './setup';
 
@@ -25,7 +20,7 @@ describe('UsersController (e2e)', () => {
       expect(response.body.name).toBe(testUser.name);
       expect(response.body.email).toBe(testUser.email);
 
-      const message = await rabbitMQHelper.getMessageWithPattern(QUEUE_PATTERN_USER_CREATED);
+      const message = await rabbitMQHelper.getMessageWithPattern('users.created');
       expect(message).toBeDefined();
 
       if (message) {
@@ -172,7 +167,7 @@ describe('UsersController (e2e)', () => {
       expect(response.body.id).toBe(userId);
       expect(response.body.name).toBe(updateData.name);
 
-      const message = await rabbitMQHelper.getMessageWithPattern(QUEUE_PATTERN_USER_UPDATED);
+      const message = await rabbitMQHelper.getMessageWithPattern('users.updated');
       if (message) {
         expect(message.id).toBe(userId);
         expect(message.name).toBe(updateData.name);
@@ -247,7 +242,7 @@ describe('UsersController (e2e)', () => {
 
       await request(app.getHttpServer()).delete(`${API_PREFIX}/users/${userId}`).expect(200);
 
-      const message = await rabbitMQHelper.getMessageWithPattern(QUEUE_PATTERN_USER_DELETED);
+      const message = await rabbitMQHelper.getMessageWithPattern('users.deleted');
       if (message) {
         expect(message.id).toBe(userId);
       }

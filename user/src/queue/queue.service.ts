@@ -21,6 +21,7 @@ export class QueueService {
   }
 
   async publishUserEvent(user: UserDocument, eventType: UserEventType) {
+    this.logger.log(`Publishing event with pattern: ${user.collection.name}.${eventType}`);
     this.publishEvent(
       `${user.collection.name}.${eventType}`,
       UserEventDto.fromEntity(user),
