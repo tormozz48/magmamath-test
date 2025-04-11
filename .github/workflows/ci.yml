@@ -82,9 +82,23 @@ jobs:
         run: npm run user:test:e2e
 
   build-notification-service:
-    name: Build Notification Service
+    name: Build Notification Service & Run E2E Tests
     runs-on: ubuntu-latest
     needs: lint
+    services:
+      rabbitmq:
+        image: rabbitmq:3-management
+        ports:
+          - 5672:5672
+          - 15672:15672
+        env:
+          RABBITMQ_DEFAULT_USER: guest
+          RABBITMQ_DEFAULT_PASS: guest
+        options: >-
+          --health-cmd "rabbitmqctl status"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     
     steps:
       - uses: actions/checkout@v3
@@ -100,3 +114,9 @@ jobs:
       
       - name: Build notification service
         run: npm run notification:build
+        
+      - name: Run notification service e2e tests
+        env:
+          RABBITMQ_URI: amqp://guest:guest@localhost:5672
+          NOTIFICATION_SERVICE_PORT: 4001
+        run: npm run notification:test:e2e
