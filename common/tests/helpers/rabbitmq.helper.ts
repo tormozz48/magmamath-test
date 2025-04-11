@@ -26,8 +26,6 @@ export class RabbitMQHelper {
       this.connection = await amqplib.connect(uri);
       this.channel = await this.connection.createChannel();
       await this.channel.assertQueue(this.queue, { durable: true });
-
-      this.logger.log('Connected to RabbitMQ for testing');
     } catch (error) {
       this.logger.error('Failed to connect to RabbitMQ', error);
       throw error;
@@ -42,7 +40,6 @@ export class RabbitMQHelper {
       if (this.connection) {
         await this.connection.close();
       }
-      this.logger.log('Closed RabbitMQ connection');
     } catch (error) {
       this.logger.error('Error closing RabbitMQ connection', error);
     }
@@ -51,7 +48,6 @@ export class RabbitMQHelper {
   async purgeQueue(): Promise<void> {
     try {
       await this.channel.purgeQueue(this.queue);
-      this.logger.log(`Purged queue: ${this.queue}`);
     } catch (error) {
       this.logger.error(`Error purging queue: ${this.queue}`, error);
       throw error;
@@ -105,7 +101,6 @@ export class RabbitMQHelper {
         clearTimeout(timer);
         this.channel.cancel(consumerTag);
         this.channel.ack(msg);
-        this.logger.log(`Received message with pattern: ${pattern}`);
         resolve(content);
       } else {
         this.channel.nack(msg, false, true);
