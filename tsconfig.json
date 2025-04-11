@@ -20,5 +20,5 @@
     "noEmitOnError": true,
     "useDefineForClassFields": false
   },
-  "include": ["user/**/*.ts", "notification/**/*.ts"]
+  "include": ["user/**/*.ts", "notification/**/*.ts", "common/tests/helpers/rabbitmq.helper.ts"]
 }

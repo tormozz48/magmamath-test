@@ -1,16 +1,22 @@
 import { INestApplication } from '@nestjs/common';
 
-import { Connection, connect } from 'mongoose';
 import * as request from 'supertest';
 
+import { MongoDBHelper } from '../../common/tests/helpers/mongodb.helper';
+import { RabbitMQHelper } from '../../common/tests/helpers/rabbitmq.helper';
 import { createApplication } from '../src/app';
+import {
+  RABBITMQ_QUEUE,
+  RABBITMQ_USER_CREATED_PATTERN,
+  RABBITMQ_USER_DELETED_PATTERN,
+  RABBITMQ_USER_UPDATED_PATTERN,
+} from '../src/constants/rabbitmq.constants';
 import { CreateUserDto } from '../src/users/dto/create-user.dto';
 import { UpdateUserDto } from '../src/users/dto/update-user.dto';
-import { RabbitMQHelper } from './helpers/rabbitmq.helper';
 
 describe('UsersController (e2e)', () => {
   let app: INestApplication;
-  let mongoConnection: Connection;
+  let mongoDBHelper: MongoDBHelper;
   let rabbitMQHelper: RabbitMQHelper;
   let userId: string;
   const API_PREFIX = '/api/v1';
@@ -42,21 +48,11 @@ describe('UsersController (e2e)', () => {
   };
 
   beforeAll(async () => {
-    // Connect to MongoDB directly for test setup and cleanup
-    const mongoUri = process.env.MONGODB_URI;
-    if (!mongoUri) {
-      throw new Error('MONGODB_URI environment variable is not set');
-    }
+    mongoDBHelper = new MongoDBHelper();
+    await mongoDBHelper.connect();
+    await mongoDBHelper.purgeDatabase();
 
-    mongoConnection = (await connect(mongoUri)).connection;
-
-    // Clear the database before running tests
-    await Promise.all(
-      Object.values(mongoConnection.collections).map((collection) => collection.deleteMany({})),
-    );
-
-    // Initialize RabbitMQ helper
-    rabbitMQHelper = new RabbitMQHelper();
+    rabbitMQHelper = new RabbitMQHelper({ queue: RABBITMQ_QUEUE });
     await rabbitMQHelper.connect();
     await rabbitMQHelper.purgeQueue();
 
@@ -65,23 +61,16 @@ describe('UsersController (e2e)', () => {
   });
 
   afterAll(async () => {
-    // Clean up the database
-    if (mongoConnection && mongoConnection.collections) {
-      await Promise.all(
-        Object.values(mongoConnection.collections).map((collection) => collection.deleteMany({})),
-      );
-    }
+    await app.close();
 
-    // Close RabbitMQ connection
     if (rabbitMQHelper) {
       await rabbitMQHelper.purgeQueue();
       await rabbitMQHelper.close();
     }
 
-    // Close the app and MongoDB connection
-    await app.close();
-    if (mongoConnection) {
-      await mongoConnection.close();
+    if (mongoDBHelper) {
+      await mongoDBHelper.purgeDatabase();
+      await mongoDBHelper.close();
     }
   });
 
@@ -100,7 +89,7 @@ describe('UsersController (e2e)', () => {
       userId = response.body.id;
 
       // Check if message was published to RabbitMQ
-      const message = await rabbitMQHelper.getUserCreatedMessage();
+      const message = await rabbitMQHelper.getMessageWithPattern(RABBITMQ_USER_CREATED_PATTERN);
       expect(message).toBeDefined();
 
       // Only check message properties if message was received
@@ -216,7 +205,7 @@ describe('UsersController (e2e)', () => {
       expect(response.body.email).toBe(mockUser.email);
 
       // Check if message was published to RabbitMQ
-      const message = await rabbitMQHelper.getUserUpdatedMessage();
+      const message = await rabbitMQHelper.getMessageWithPattern(RABBITMQ_USER_UPDATED_PATTERN);
 
       // Only verify message properties if a message was received
       if (message) {
@@ -266,7 +255,7 @@ describe('UsersController (e2e)', () => {
     it('should delete a user and publish a message to RabbitMQ', async () => {
       await request(app.getHttpServer()).delete(`${API_PREFIX}/users/${userId}`).expect(200);
 
-      const message = await rabbitMQHelper.getUserDeletedMessage();
+      const message = await rabbitMQHelper.getMessageWithPattern(RABBITMQ_USER_DELETED_PATTERN);
 
       if (message) {
         expect(message.id).toBe(userId);
