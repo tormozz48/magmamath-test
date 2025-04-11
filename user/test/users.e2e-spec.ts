@@ -1,53 +1,15 @@
-import { INestApplication } from '@nestjs/common';
-
 import { faker } from '@faker-js/faker/.';
 import * as request from 'supertest';
+
 import {
-  QUEUE_NAME,
   QUEUE_PATTERN_USER_CREATED,
   QUEUE_PATTERN_USER_DELETED,
   QUEUE_PATTERN_USER_UPDATED,
-} from 'user/src/constants';
-
-import { MongoDBHelper } from '../../common/tests/helpers/mongodb.helper';
-import { RabbitMQHelper } from '../../common/tests/helpers/rabbitmq.helper';
-import { createApplication } from '../src/app';
+} from '../src/constants';
 import { createUniqueEmail, createUserDto, updateUserDto } from './factories/user.factory';
+import { API_PREFIX, app, rabbitMQHelper } from './setup';
 
 describe('UsersController (e2e)', () => {
-  const API_PREFIX = '/api/v1';
-
-  let app: INestApplication;
-  let mongoDBHelper: MongoDBHelper;
-  let rabbitMQHelper: RabbitMQHelper;
-
-  beforeAll(async () => {
-    mongoDBHelper = new MongoDBHelper();
-    await mongoDBHelper.connect();
-    await mongoDBHelper.purgeDatabase();
-
-    rabbitMQHelper = new RabbitMQHelper({ queue: QUEUE_NAME });
-    await rabbitMQHelper.connect();
-    await rabbitMQHelper.purgeQueue();
-
-    app = await createApplication();
-    await app.listen(process.env.USER_SERVICE_PORT || 4000);
-  });
-
-  afterAll(async () => {
-    await app.close();
-
-    if (rabbitMQHelper) {
-      await rabbitMQHelper.purgeQueue();
-      await rabbitMQHelper.close();
-    }
-
-    if (mongoDBHelper) {
-      await mongoDBHelper.purgeDatabase();
-      await mongoDBHelper.close();
-    }
-  });
-
   describe('POST /users', () => {
     it('should create a new user and publish a message to RabbitMQ', async () => {
       const testUser = createUserDto({
@@ -254,10 +216,17 @@ describe('UsersController (e2e)', () => {
       const testUser = createUserDto({
         email: existingEmail,
       });
+      await request(app.getHttpServer()).post(`${API_PREFIX}/users`).send(testUser).expect(201);
 
+      const anotherUser = createUserDto({
+        email: createUniqueEmail('another'),
+      });
       const {
         body: { id: userId },
-      } = await request(app.getHttpServer()).post(`${API_PREFIX}/users`).send(testUser).expect(201);
+      } = await request(app.getHttpServer())
+        .post(`${API_PREFIX}/users`)
+        .send(anotherUser)
+        .expect(201);
 
       await request(app.getHttpServer())
         .patch(`${API_PREFIX}/users/${userId}`)
