@@ -8,10 +8,8 @@ import { AppModule } from './app.module';
 export async function createApplication(): Promise<INestApplication> {
   const app = await NestFactory.create(AppModule);
 
-  // Set global prefix
   app.setGlobalPrefix('api/v1');
 
-  // Setup Swagger
   const config = new DocumentBuilder()
     .setTitle('User Service API')
     .setDescription('API documentation for the User Service')
@@ -23,7 +21,6 @@ export async function createApplication(): Promise<INestApplication> {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  // Enable validation
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

@@ -5,7 +5,6 @@ import * as path from 'path';
 
 import { createApplication } from './app';
 
-// Load environment variables from .env file
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 async function bootstrap() {

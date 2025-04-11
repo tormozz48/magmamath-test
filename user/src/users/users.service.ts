@@ -1,9 +1,11 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 
 import { Model } from 'mongoose';
 
+import { UserEventType } from '../constants';
 import { QueueService } from '../queue/queue.service';
+import { handleDuplicationMongoErrors } from '../utils';
 import { CreateUserDto } from './dto/create-user.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -16,9 +18,9 @@ export class UsersService {
     private readonly queueService: QueueService,
   ) {}
 
-  async findAll(
+  async find(
     queryUserDto: QueryUserDto,
-  ): Promise<{ items: UserDocument[]; total: number; page: number; limit: number; pages: number }> {
+  ): Promise<{ items: UserDocument[]; total: number; page: number; limit: number }> {
     const { name, email, page = 1, limit = 10 } = queryUserDto;
     const skip = (page - 1) * limit;
 
@@ -30,20 +32,16 @@ export class UsersService {
       filter.email = { $regex: email, $options: 'i' };
     }
 
-    // Execute both queries in parallel for better performance
     const [items, total] = await Promise.all([
       this.userModel.find(filter).skip(skip).limit(limit).exec(),
       this.userModel.countDocuments(filter).exec(),
     ]);
-
-    const pages = Math.ceil(total / limit);
 
     return {
       items,
       total,
       page,
       limit,
-      pages,
     };
   }
 
@@ -56,64 +54,36 @@ export class UsersService {
   }
 
   async create(createUserDto: CreateUserDto): Promise<UserDocument> {
-    return this.handleDuplicationMongoErrors(async () => {
+    return handleDuplicationMongoErrors(async () => {
       const createdUser = new this.userModel(createUserDto);
       const user = await createdUser.save();
 
-      // Publish user created event to RabbitMQ
-      await this.queueService.publishUserCreated(user);
-
+      await this.queueService.publishUserEvent(user, UserEventType.CREATED);
       return user;
     }, 'User with this email already exists');
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<UserDocument> {
-    return this.handleDuplicationMongoErrors(async () => {
+    return handleDuplicationMongoErrors(async () => {
       const updatedUser = await this.userModel
         .findByIdAndUpdate(id, updateUserDto, { new: true })
         .exec();
-
       if (!updatedUser) {
         throw new NotFoundException(`User with ID ${id} not found`);
       }
 
-      // Publish user updated event to RabbitMQ
-      await this.queueService.publishUserUpdated(updatedUser);
-
+      await this.queueService.publishUserEvent(updatedUser, UserEventType.UPDATED);
       return updatedUser;
     }, 'Email already in use');
   }
 
   async remove(id: string): Promise<UserDocument> {
     const deletedUser = await this.userModel.findByIdAndDelete(id).exec();
-
     if (!deletedUser) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
 
-    // Publish user deleted event to RabbitMQ
-    await this.queueService.publishUserDeleted(deletedUser);
-
+    await this.queueService.publishUserEvent(deletedUser, UserEventType.DELETED);
     return deletedUser;
-  }
-
-  /**
-   * Handle common MongoDB errors, particularly duplicate key errors (code 11000)
-   * @param operation Async operation to execute
-   * @param duplicateKeyMessage Custom message for duplicate key errors
-   * @returns Result of the operation
-   */
-  private async handleDuplicationMongoErrors<T>(
-    operation: () => Promise<T>,
-    duplicateKeyMessage: string,
-  ): Promise<T> {
-    try {
-      return await operation();
-    } catch (error) {
-      if (error.code === 11000) {
-        throw new ConflictException(duplicateKeyMessage);
-      }
-      throw error;
-    }
   }
 }

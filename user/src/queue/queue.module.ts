@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 
-import { RABBITMQ_QUEUE } from '../constants/rabbitmq.constants';
+import { QUEUE_NAME } from '../constants';
 import { QueueService } from './queue.service';
 
 @Module({
@@ -15,7 +15,7 @@ import { QueueService } from './queue.service';
           transport: Transport.RMQ,
           options: {
             urls: [configService.get<string>('RABBITMQ_URI')],
-            queue: RABBITMQ_QUEUE,
+            queue: QUEUE_NAME,
             queueOptions: {
               durable: true,
             },

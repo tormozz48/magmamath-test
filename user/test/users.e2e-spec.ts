@@ -2,16 +2,16 @@ import { INestApplication } from '@nestjs/common';
 
 import { faker } from '@faker-js/faker/.';
 import * as request from 'supertest';
+import {
+  QUEUE_NAME,
+  QUEUE_PATTERN_USER_CREATED,
+  QUEUE_PATTERN_USER_DELETED,
+  QUEUE_PATTERN_USER_UPDATED,
+} from 'user/src/constants';
 
 import { MongoDBHelper } from '../../common/tests/helpers/mongodb.helper';
 import { RabbitMQHelper } from '../../common/tests/helpers/rabbitmq.helper';
 import { createApplication } from '../src/app';
-import {
-  RABBITMQ_QUEUE,
-  RABBITMQ_USER_CREATED_PATTERN,
-  RABBITMQ_USER_DELETED_PATTERN,
-  RABBITMQ_USER_UPDATED_PATTERN,
-} from '../src/constants/rabbitmq.constants';
 import { createUniqueEmail, createUserDto, updateUserDto } from './factories/user.factory';
 
 describe('UsersController (e2e)', () => {
@@ -26,7 +26,7 @@ describe('UsersController (e2e)', () => {
     await mongoDBHelper.connect();
     await mongoDBHelper.purgeDatabase();
 
-    rabbitMQHelper = new RabbitMQHelper({ queue: RABBITMQ_QUEUE });
+    rabbitMQHelper = new RabbitMQHelper({ queue: QUEUE_NAME });
     await rabbitMQHelper.connect();
     await rabbitMQHelper.purgeQueue();
 
@@ -63,7 +63,7 @@ describe('UsersController (e2e)', () => {
       expect(response.body.name).toBe(testUser.name);
       expect(response.body.email).toBe(testUser.email);
 
-      const message = await rabbitMQHelper.getMessageWithPattern(RABBITMQ_USER_CREATED_PATTERN);
+      const message = await rabbitMQHelper.getMessageWithPattern(QUEUE_PATTERN_USER_CREATED);
       expect(message).toBeDefined();
 
       if (message) {
@@ -210,7 +210,7 @@ describe('UsersController (e2e)', () => {
       expect(response.body.id).toBe(userId);
       expect(response.body.name).toBe(updateData.name);
 
-      const message = await rabbitMQHelper.getMessageWithPattern(RABBITMQ_USER_UPDATED_PATTERN);
+      const message = await rabbitMQHelper.getMessageWithPattern(QUEUE_PATTERN_USER_UPDATED);
       if (message) {
         expect(message.id).toBe(userId);
         expect(message.name).toBe(updateData.name);
@@ -278,7 +278,7 @@ describe('UsersController (e2e)', () => {
 
       await request(app.getHttpServer()).delete(`${API_PREFIX}/users/${userId}`).expect(200);
 
-      const message = await rabbitMQHelper.getMessageWithPattern(RABBITMQ_USER_DELETED_PATTERN);
+      const message = await rabbitMQHelper.getMessageWithPattern(QUEUE_PATTERN_USER_DELETED);
       if (message) {
         expect(message.id).toBe(userId);
       }

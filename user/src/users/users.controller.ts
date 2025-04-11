@@ -49,15 +49,14 @@ export class UsersController {
     required: false,
     description: 'Number of items per page (default: 10)',
   })
-  async findAll(@Query() queryUserDto: QueryUserDto): Promise<PaginatedResponseDto> {
-    const paginatedResult = await this.usersService.findAll(queryUserDto);
+  async find(@Query() queryUserDto: QueryUserDto): Promise<PaginatedResponseDto> {
+    const paginatedResult = await this.usersService.find(queryUserDto);
 
     return {
-      items: this.toUserDtoArray(paginatedResult.items),
+      items: paginatedResult.items.map(this.toUserDto.bind(this)),
       total: paginatedResult.total,
       page: paginatedResult.page,
       limit: paginatedResult.limit,
-      pages: paginatedResult.pages,
     };
   }
 
@@ -104,9 +103,6 @@ export class UsersController {
     return this.toUserDto(user);
   }
 
-  /**
-   * Convert a MongoDB user document to a UserResponseDto
-   */
   private toUserDto(user: UserDocument): UserResponseDto {
     return {
       id: user._id.toString(),
@@ -114,12 +110,5 @@ export class UsersController {
       email: user.email,
       createdAt: user.createdAt,
     };
-  }
-
-  /**
-   * Convert an array of MongoDB user documents to UserResponseDto array
-   */
-  private toUserDtoArray(users: UserDocument[]): UserResponseDto[] {
-    return users.map((user) => this.toUserDto(user));
   }
 }
