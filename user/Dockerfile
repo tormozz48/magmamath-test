@@ -2,21 +2,16 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy package.json and package-lock.json
 COPY package*.json ./
 
-# Install dependencies
-RUN npm install
+RUN npm install --legacy-peer-deps
 
-# Copy source code
 COPY . .
 
-# Build TypeScript code for user service
 RUN npm run user:build
 
-# Use the port from environment variable with fallback
 ENV USER_SERVICE_PORT=4000
 EXPOSE ${USER_SERVICE_PORT}
 
-# Command to run the application
-CMD ["npm", "run", "user:start:prod"]
+# Use direct node command instead of npm script
+CMD ["node", "user/dist/main.js"]
