@@ -14,4 +14,4 @@ ENV USER_SERVICE_PORT=4000
 EXPOSE ${USER_SERVICE_PORT}
 
 # Use direct node command instead of npm script
-CMD ["node", "user/dist/main.js"]
+CMD ["node", "user/dist/user/src/main.js"]

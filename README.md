@@ -175,9 +175,9 @@ This interactive documentation allows you to:
 
 The following RabbitMQ event patterns are used for communication between services:
 
-- `users.created`: Published when a new user is created
-- `users.updated`: Published when a user is updated
-- `users.deleted`: Published when a user is deleted
+- `user.created`: Published when a new user is created
+- `user.updated`: Published when a user is updated
+- `user.deleted`: Published when a user is deleted
 
 ## License
 

@@ -14,4 +14,4 @@ ENV NOTIFICATION_SERVICE_PORT=4001
 EXPOSE ${NOTIFICATION_SERVICE_PORT}
 
 # Use direct node command instead of npm script
-CMD ["node", "notification/dist/main.js"]
+CMD ["node", "notification/dist/notification/src/main.js"]
