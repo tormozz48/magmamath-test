@@ -4,7 +4,7 @@ import { ClientsModule, Transport } from '@nestjs/microservices';
 import { MongooseModule } from '@nestjs/mongoose';
 import { TerminusModule } from '@nestjs/terminus';
 
-import { QUEUE_NAME } from '../constants';
+import { QUEUE_NAME } from '../../../common/constants';
 import { HealthController } from './health.controller';
 
 @Module({

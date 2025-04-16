@@ -3,7 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 
 import { Model } from 'mongoose';
 
-import { UserEventType } from '../constants';
+import { UserEventType } from '../../../common/constants';
 import { QueueService } from '../queue/queue.service';
 import { handleDuplicationMongoErrors } from '../utils';
 import { CreateUserDto } from './dto/create-user.dto';

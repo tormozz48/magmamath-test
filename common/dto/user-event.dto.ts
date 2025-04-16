@@ -1,4 +1,4 @@
-import { UserDocument } from '../../users/schemas/user.schema';
+import { UserDocument } from '../../user/src/users/schemas/user.schema';
 
 export class UserEventDto {
   id: string;

@@ -3,7 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { TerminusModule } from '@nestjs/terminus';
 
-import { QUEUE_NAME } from '../constants';
+import { QUEUE_NAME } from '../../../common/constants';
 import { HealthController } from './health.controller';
 
 @Module({

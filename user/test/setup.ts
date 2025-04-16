@@ -3,10 +3,10 @@ import { INestApplication } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
+import { QUEUE_NAME } from '../../common/constants';
 import { MongoDBHelper } from '../../common/tests/helpers/mongodb.helper';
 import { RabbitMQHelper } from '../../common/tests/helpers/rabbitmq.helper';
 import { createApplication } from '../src/app';
-import { QUEUE_NAME } from '../src/constants';
 
 // Load environment variables from .env file in the root directory
 dotenv.config({ path: path.join(process.cwd(), '.env') });

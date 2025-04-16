@@ -1,9 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
 
-import { UserEventType } from '../constants';
+import { UserEventType, userEventPattern } from '../../../common/constants';
+import { UserEventDto } from '../../../common/dto/user-event.dto';
 import { UserDocument } from '../users/schemas/user.schema';
-import { UserEventDto } from './dto/user-event.dto';
 
 @Injectable()
 export class QueueService {
@@ -21,12 +21,7 @@ export class QueueService {
   }
 
   async publishUserEvent(user: UserDocument, eventType: UserEventType) {
-    this.logger.log(`Publishing event with pattern: ${user.collection.name}.${eventType}`);
-    this.publishEvent(
-      `${user.collection.name}.${eventType}`,
-      UserEventDto.fromEntity(user),
-      eventType,
-    );
+    this.publishEvent(userEventPattern[eventType], UserEventDto.fromEntity(user), eventType);
   }
 
   private async publishEvent<T extends Record<string, any>, U>(

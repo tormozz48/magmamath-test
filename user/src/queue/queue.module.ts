@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 
-import { QUEUE_NAME } from '../constants';
+import { QUEUE_NAME } from '../../../common/constants';
 import { QueueService } from './queue.service';
 
 @Module({

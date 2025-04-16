@@ -3,8 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 
+import { QUEUE_NAME } from '../../common/constants';
 import { AppModule } from './app.module';
-import { QUEUE_NAME } from './constants';
 
 export async function createApplication(): Promise<INestApplication> {
   const app = await NestFactory.create(AppModule);
